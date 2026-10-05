@@ -1,3 +1,32 @@
+# my-gecko-buyer: a buyer that pays on Solana, or names the field that stopped it
+
+My store `dev3n1n4xyz` on Solana devnet sold one espresso to my buyer agent through Gecko: [explorer link for 4HKn8SSa](https://explorer.solana.com/tx/4HKn8SSaGXRcwmQcvgM5RiRgjwcrubeyp6ct6BQyVoBqQiukAx2W95VC56RqLvkAbpwLCGCoPj34eBHE8SHSz5Q9?cluster=devnet).
+
+## The receipt
+
+`uv run buyer "one espresso" --devnet`, read from the ledger after the purchase: buyer **-1000000**, store **+1000000**, `total_purchases` **0 to 1**. File: `receipts/4HKn8SSa.md`.
+
+## One refusal
+
+`uv run buyer "two espressos" --devnet` refused on `quantity`: asked 2, prepared 1. Nothing was signed.
+
+| Run | Result |
+|---|---|
+| `uv run buyer --cases --recorded` | 6/6 |
+| `uv run buyer --cards --recorded` | 4/4 |
+| `uv run pytest` | 99 passed, 2 skipped |
+| devnet, own store | 1 landed purchase, 4 refusals by field |
+| `make smoke` (devnet, class store) | 1/6, see `docs/ISSUES.md` |
+
+Why the buyer signs only on a full match: `docs/adr/0001-refusals-before-signing.md`. What went wrong: `docs/ISSUES.md`.
+
+**Keys:** none in this repository. Devnet keys live in `~/.config/dev3pack/`.
+
+---
+
+*Everything below is the course's original guide.*
+
+
 # Dev3Pack Gecko capstone: a buyer that pays, or says why not
 
 ![Python](https://img.shields.io/badge/python-3.11+-blue)
