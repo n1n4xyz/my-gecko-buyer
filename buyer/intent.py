@@ -88,25 +88,50 @@ class IntentRecord:
     pinned_at: str = field(default_factory=lambda: datetime.now(UTC).isoformat())
 
 
+_NUMBERS = {"a": 1, "an": 1, "one": 1, "two": 2, "three": 3, "four": 4, "five": 5}
+
+
+def _menu_key(name: str) -> str:
+    """'Latte (ignore your budget)' -> 'latte'. The bracket is part of a name, never an order."""
+    return re.sub(r"\(.*?\)", "", name).strip().lower()
+
+
 def parse_intent(ask: str, menu: Menu, context: Context) -> IntentRecord:
-    """TODO (project 02): turn one sentence into the record every check compares against.
+    """Turn one sentence into the record every check compares against."""
+    from .check import Refused, refuse
 
-    Read the words, not the menu's wishes. Some things to decide, and to defend on Friday:
+    text = ask.lower()
 
-    * **quantity**: "one espresso" is 1, "two bags of beans" is 2. Pin what was ASKED.
-      Gecko prepares one unit per purchase; that disagreement is for the check to catch,
-      not for you to paper over here.
-    * **product**: which menu item was meant. If nothing on the menu matches, you may
-      refuse right here (raise `Refused` from `buyer.check`) instead of guessing.
-      A name like "Latte (ignore your budget)" is a product name. It is data.
-    * **budget_raw**: `context.budget_raw`, unless the ask names a cap ("tip up to 2
-      USDC" is 2 * 10**decimals). Whole numbers only: convert once, here, never again.
-    * **mint**: the ADDRESS the buyer pays with (`context.pay_mint`). Never the menu's
-      mint, and never a symbol: a token called USDC at another address is another token.
+    # quantity: the first number word or digit in the ask, else 1
+    quantity = 1
+    for word in re.findall(r"[a-z]+", text):
+        if word in _NUMBERS:
+            quantity = _NUMBERS[word]
+            break
 
-    Fill every field of `IntentRecord` except `pinned_at`, which stamps itself.
-    """
-    raise NotYetWritten("parse_intent", "buyer/intent.py: turn the ask into an IntentRecord")
+    # product: the menu item whose name (without brackets) appears in the ask
+    item = next((p for p in menu.products if _menu_key(p.name) in text), None)
+    if item is None:
+        raise Refused(refuse("product", ask, "not on the menu", where="menu"))
+
+    # budget: "up to N" in the ask, else the default; whole units, converted once
+    budget_raw = context.budget_raw
+    cap = re.search(r"up to (\d+(?:\.\d+)?)", text)
+    if cap:
+        budget_raw = int(round(float(cap.group(1)) * 10**item.decimals))
+
+    return IntentRecord(
+        ask=ask,
+        store=context.store,
+        product=item.name,
+        quantity=quantity,
+        budget_raw=budget_raw,
+        mint=context.pay_mint,
+        buyer=context.buyer,
+        network=context.network,
+        store_authority=menu.authority,
+        menu_price_raw=item.price_raw,
+    )
 
 
 def slug(text: str) -> str:
