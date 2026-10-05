@@ -46,3 +46,4 @@ select = ["E", "F", "I", "B", "UP"]
 # agent.py imports what the step bodies need before you write them. Without this,
 # `ruff check --fix` would delete those imports while they are still unused.
 "buyer/agent.py" = ["F401"]
+"*.ipynb" = ["E501"]
