@@ -137,7 +137,9 @@ def check_quantity(intent: IntentRecord, prepared: Prepared) -> FieldResult:
     `prepare_purchase` prepares one unit. Use case 5 ("two bags of beans") must refuse:
     asked 2, prepared 1. Refusing is the honest answer; buying one is not what was asked.
     """
-    raise NotYetWritten("check_quantity", "buyer/check.py: compare prepared.quantity with the pin")
+    if prepared.quantity != intent.quantity:
+        return refuse("quantity", intent.quantity, prepared.quantity)
+    return agree("quantity", intent.quantity)
 
 
 def check_destination(intent: IntentRecord, prepared: Prepared) -> FieldResult:
