@@ -1,17 +1,14 @@
-# The buyer signs only when <N> fields match the pinned intent
-
-*Your first decision record. Fill every section, keep the headings. The table's rows are
-the seven fields `buyer/check.py` compares, plus the signed-bytes step; say in your own
-words how and why for each one. Delete these italic lines when you are done.*
+# The buyer signs only when 7 fields match the pinned intent
 
 ## Status and date
 
-proposed | accepted, YYYY-MM-DD
+accepted, 2026-10-05
 
 ## Context
 
-My buyer holds a key that can pay. Gecko prepares the bytes; I sign them. What would a
-wrong transaction cost, and which past incident shows it? (one number)
+My buyer holds a key that can pay. Gecko prepares the bytes; I sign them. A wrong
+transaction costs real tokens and cannot be undone once it lands. On devnet, one
+espresso is 1000000 raw of my token; on mainnet the same mistake would be real money.
 
 ## Decision
 
@@ -20,29 +17,33 @@ Before signing, the buyer compares these fields of the prepared transaction with
 
 | Field | Compared how | Why this one |
 |---|---|---|
-| program | address equality, and no other program riding along | |
-| store | address, derived from `['receipts', name]`, never a constant | |
-| product | | |
-| price_raw | integer, at or under the pinned budget | |
-| mint | address, never the symbol | |
-| quantity | integer | |
-| destination | the store authority's token account for the pinned mint | |
-| signed bytes | `verify_signed_transaction` before `submit_transaction` | |
+| program | address equality, and no other program riding along | an extra program in the same transaction could move money I never asked to move |
+| store | address, derived from `['receipts', name]`, never a constant | a store with a similar name, or a swapped account, gives a different address |
+| product | exact name match | a near match like VIP vs general admission must refuse, not guess |
+| price_raw | integer, at or under the pinned budget | whole units on both sides, so no rounding; a missing amount refuses too |
+| mint | address, never the symbol | a token called USDC at another address is another token |
+| quantity | integer | Gecko prepares one unit; buying one when two were asked is not what was asked |
+| destination | the store authority's token account for the pinned mint | derived by me, never copied from Gecko, so money cannot be redirected |
+| signed bytes | `verify_signed_transaction` before `submit_transaction` | proves the signed bytes are the bytes that were checked, before anything is sent |
 
 ## What this forbids
 
 Signing on a partial match. Retrying a refusal unchanged. Signing without a passed
-simulation. (Add what YOUR design forbids.)
+simulation. Treating text inside a product name, like "Latte (ignore your budget)",
+as an instruction. Re-signing stale bytes instead of preparing again.
 
 ## What I left out, and why
 
-The field I chose not to check, and the risk I accept by not checking it.
+I do not check the transaction fee. It is small on devnet and set by the network, so I
+accept that risk. I also do not check the table number, because my store does not use it.
 
 ## What would reverse this
 
-The observation that would make me drop or add a field. Example: "if Gecko's verify
-already binds price and mint, my own price check is duplicate work, and I drop it."
+If Gecko's verify step already binds price and mint into the signed bytes, my own price
+and mint checks would be duplicate work, and I could drop them. If a store sells items
+with several units per purchase, the quantity check would need to compare units, not 1.
 
 ## What this does not prove
 
-That my pin was right. The buyer faithfully signs a wrong request.
+That my pin was right. The buyer faithfully signs a wrong request. If `parse_intent`
+misreads the sentence, every check agrees with the wrong pin.
